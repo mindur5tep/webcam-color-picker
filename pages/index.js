@@ -3,9 +3,6 @@ import Webcam from "react-webcam";
 import { Global, css } from "@emotion/react";
 import styled from "@emotion/styled";
 
-const FACING_MODE_USER = "user";
-const FACING_MODE_ENVIRONMENT = "environment";
-
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -132,21 +129,21 @@ function rgbToCmyk(r, g, b) {
     return { c: 0, m: 0, y: 0, k: 1 };
   }
 }
-
+/*
 function getVideoConstraints() {
   if (typeof window !== "undefined") {
-    const idealWidth = Math.min(window.innerWidth, 100);
-    const idealHeight = Math.min(window.innerHeight, 120);
+    const idealWidth = Math.min(window.innerWidth, 640);
+    const idealHeight = Math.min(window.innerHeight, 640);
 
     return {
       width: { ideal: idealWidth },
       height: { ideal: idealHeight },
-      facingMode: FACING_MODE_USER,
+      deviceID: { deviceID },
     };
   }
   return {};
 }
-
+*/
 export default function Home() {
   const webcamRef = useRef(null);
   const [hexColors, setHexColors] = useState([]);
@@ -155,8 +152,18 @@ export default function Home() {
     visible: false,
     success: true,
   });
+  const [deviceId, setDeviceId] = React.useState({});
+  const [devices, setDevices] = React.useState([]);
+  const handleDevices = React.useCallback(
+    (mediaDevices) =>
+      setDevices(mediaDevices.filter(({ kind }) => kind === "videoinput")),
+    [setDevices]
+  );
 
-  const [facingMode, setFacingMode] = React.useState(FACING_MODE_USER);
+  React.useEffect(() => {
+    navigator.mediaDevices.enumerateDevices().then(handleDevices);
+  }, [handleDevices]);
+  /*
   const [videoConstraints, setVideoConstraints] = useState(
     getVideoConstraints()
   );
@@ -170,15 +177,7 @@ export default function Home() {
       return () => window.removeEventListener("resize", handleResize);
     }
   }, []);
-
-  const handleClick = React.useCallback(() => {
-    setFacingMode((prevState) =>
-      prevState === FACING_MODE_USER
-        ? FACING_MODE_ENVIRONMENT
-        : FACING_MODE_USER
-    );
-  }, []);
-
+*/
   const capture = async () => {
     const imageSrc = webcamRef.current.getScreenshot();
     const colors = await getColorsFromImage(imageSrc);
@@ -245,14 +244,23 @@ export default function Home() {
         {notification.message}
       </Notification>
       <Container>
-        <button onClick={handleClick}>Switch camera</button>
+        <div>
+          {devices.map((device, key) => (
+            <button
+              key={device.deviceId}
+              onClick={() => setDeviceId(device.deviceId)}
+            >
+              {device.label || `Device ${key + 1}`}
+            </button>
+          ))}
+        </div>
         <Webcam
           audio={false}
           height={720}
           ref={webcamRef}
           screenshotFormat="image/jpeg"
           width={1280}
-          videoConstraints={videoConstraints}
+          videoConstraints={{ deviceId }}
         />
         <CaptureButton onClick={capture}>Capture</CaptureButton>
         {hexColors.length > 0 && (
