@@ -3,6 +3,9 @@ import Webcam from "react-webcam";
 import { Global, css } from "@emotion/react";
 import styled from "@emotion/styled";
 
+const FACING_MODE_USER = "user";
+const FACING_MODE_ENVIRONMENT = "environment";
+
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -132,13 +135,13 @@ function rgbToCmyk(r, g, b) {
 
 function getVideoConstraints() {
   if (typeof window !== "undefined") {
-    const idealWidth = Math.min(window.innerWidth, 540);
-    const idealHeight = Math.min(window.innerHeight, 280);
+    const idealWidth = Math.min(window.innerWidth, 100);
+    const idealHeight = Math.min(window.innerHeight, 120);
 
     return {
       width: { ideal: idealWidth },
       height: { ideal: idealHeight },
-      facingMode: "user",
+      facingMode: FACING_MODE_USER,
     };
   }
   return {};
@@ -147,8 +150,16 @@ function getVideoConstraints() {
 export default function Home() {
   const webcamRef = useRef(null);
   const [hexColors, setHexColors] = useState([]);
-  const [notification, setNotification] = useState({ message: "", visible: false, success: true });
-  const [videoConstraints, setVideoConstraints] = useState(getVideoConstraints());
+  const [notification, setNotification] = useState({
+    message: "",
+    visible: false,
+    success: true,
+  });
+
+  const [facingMode, setFacingMode] = React.useState(FACING_MODE_USER);
+  const [videoConstraints, setVideoConstraints] = useState(
+    getVideoConstraints()
+  );
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -158,6 +169,14 @@ export default function Home() {
       window.addEventListener("resize", handleResize);
       return () => window.removeEventListener("resize", handleResize);
     }
+  }, []);
+
+  const handleClick = React.useCallback(() => {
+    setFacingMode((prevState) =>
+      prevState === FACING_MODE_USER
+        ? FACING_MODE_ENVIRONMENT
+        : FACING_MODE_USER
+    );
   }, []);
 
   const capture = async () => {
@@ -190,79 +209,85 @@ export default function Home() {
         setNotification({ message: "", visible: false });
       }, 2000);
     };
-  
+
     const errorCallback = (err) => {
       console.error("Could not copy text: ", err);
-      setNotification({ message: "Copy failed", visible: true, success: false });
+      setNotification({
+        message: "Copy failed",
+        visible: true,
+        success: false,
+      });
       setTimeout(() => {
         setNotification({ message: "", visible: false });
       }, 2000);
     };
-  
+
     if (type === "hex") {
       copyToClipboard(color.hex, successCallback, errorCallback);
     } else if (type === "rgb") {
       const rgbText = `rgb(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`;
       copyToClipboard(rgbText, successCallback, errorCallback);
     } else if (type === "cmyk") {
-      const cmykText = `cmyk(${color.cmyk.c.toFixed(
+      const cmykText = `cmyk(${color.cmyk.c.toFixed(2)}, ${color.cmyk.m.toFixed(
         2
-      )}, ${color.cmyk.m.toFixed(2)}, ${color.cmyk.y.toFixed(2)}, ${color.cmyk.k.toFixed(2)})`;
+      )}, ${color.cmyk.y.toFixed(2)}, ${color.cmyk.k.toFixed(2)})`;
       copyToClipboard(cmykText, successCallback, errorCallback);
     }
   }
-  
 
   return (
     <>
-    <Global styles={GlobalStyle} />
-    <Notification
-      visible={notification.visible}
-      success={notification.success}
-    >
-      {notification.message}
-    </Notification>
-    <Container>
-      <Webcam
-        audio={false}
-        height={720}
-        ref={webcamRef}
-        screenshotFormat="image/jpeg"
-        width={1280}
-        videoConstraints={videoConstraints}
-      />
-      <CaptureButton onClick={capture}>Capture</CaptureButton>
-      {hexColors.length > 0 && (
-        <ColorPreview>
-          {hexColors.map((color, index) => (
-            <ColorBox key={index}>
-              <ColorCircle color={color.hex} />
-              <p>
-                {color.hex}
-                <CopyButton onClick={() => handleCopyClick(color, "hex")}>
-                  Copy
-                </CopyButton>
-              </p>
-              <p>
-                {`RGB(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`}
-                <CopyButton onClick={() => handleCopyClick(color, "rgb")}>
-                  Copy
-                </CopyButton>
-              </p>
-              <p>
-                {`CMYK(${color.cmyk.c.toFixed(2)}, ${color.cmyk.m.toFixed(2)}, ${color.cmyk.y.toFixed(2)}, ${color.cmyk.k.toFixed(2)})`}
-                <CopyButton onClick={() => handleCopyClick(color, "cmyk")}>
-                  Copy
-                </CopyButton>
-              </p>
-            </ColorBox>
-          ))}
-        </ColorPreview>
-      )}
-    </Container>
-  </>
-);
-          }
+      <Global styles={GlobalStyle} />
+      <Notification
+        visible={notification.visible}
+        success={notification.success}
+      >
+        {notification.message}
+      </Notification>
+      <Container>
+        <button onClick={handleClick}>Switch camera</button>
+        <Webcam
+          audio={false}
+          height={720}
+          ref={webcamRef}
+          screenshotFormat="image/jpeg"
+          width={1280}
+          videoConstraints={videoConstraints}
+        />
+        <CaptureButton onClick={capture}>Capture</CaptureButton>
+        {hexColors.length > 0 && (
+          <ColorPreview>
+            {hexColors.map((color, index) => (
+              <ColorBox key={index}>
+                <ColorCircle color={color.hex} />
+                <p>
+                  {color.hex}
+                  <CopyButton onClick={() => handleCopyClick(color, "hex")}>
+                    Copy
+                  </CopyButton>
+                </p>
+                <p>
+                  {`RGB(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`}
+                  <CopyButton onClick={() => handleCopyClick(color, "rgb")}>
+                    Copy
+                  </CopyButton>
+                </p>
+                <p>
+                  {`CMYK(${color.cmyk.c.toFixed(2)}, ${color.cmyk.m.toFixed(
+                    2
+                  )}, ${color.cmyk.y.toFixed(2)}, ${color.cmyk.k.toFixed(2)})`}
+                  <CopyButton onClick={() => handleCopyClick(color, "cmyk")}>
+                    Copy
+                  </CopyButton>
+                </p>
+              </ColorBox>
+            ))}
+          </ColorPreview>
+        )}
+      </Container>
+    </>
+  );
+}
 
 async function getColorsFromImage(imageSrc) {
   const img = new Image();
@@ -289,13 +314,20 @@ async function getColorsFromImage(imageSrc) {
     { x: stepX * 3, y: stepY * 2 },
   ];
 
-  const colors = await Promise.all(positions.map(async (pos) => getColorFromImageData(ctx, pos, sampleSize)));
+  const colors = await Promise.all(
+    positions.map(async (pos) => getColorFromImageData(ctx, pos, sampleSize))
+  );
 
   return colors;
 }
 
 async function getColorFromImageData(ctx, position, sampleSize) {
-  const imageData = ctx.getImageData(position.x, position.y, sampleSize, sampleSize).data;
+  const imageData = ctx.getImageData(
+    position.x,
+    position.y,
+    sampleSize,
+    sampleSize
+  ).data;
 
   let r = 0;
   let g = 0;
@@ -340,12 +372,12 @@ function handleCopyClick(color, type) {
     const rgbText = `rgb(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`;
     copyToClipboard(rgbText);
   } else if (type === "cmyk") {
-    const cmykText = `cmyk(${color.cmyk.c.toFixed(2)}, ${color.cmyk.m.toFixed(2)}, ${color.cmyk.y.toFixed(2)}, ${color.cmyk.k.toFixed(2)})`;
+    const cmykText = `cmyk(${color.cmyk.c.toFixed(2)}, ${color.cmyk.m.toFixed(
+      2
+    )}, ${color.cmyk.y.toFixed(2)}, ${color.cmyk.k.toFixed(2)})`;
     copyToClipboard(cmykText);
   }
 }
-
-
 
 function rgbToHex(r, g, b) {
   return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
