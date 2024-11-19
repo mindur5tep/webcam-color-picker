@@ -95,8 +95,18 @@ const Notification = styled.div`
 const GlobalStyle = css`
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-      Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+    font-family:
+      -apple-system,
+      BlinkMacSystemFont,
+      Segoe UI,
+      Roboto,
+      Oxygen,
+      Ubuntu,
+      Cantarell,
+      Fira Sans,
+      Droid Sans,
+      Helvetica Neue,
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -129,6 +139,41 @@ function rgbToCmyk(r, g, b) {
     return { c: 0, m: 0, y: 0, k: 1 };
   }
 }
+
+function rgbToHsl(r, g, b) {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  var max = Math.max(r, g, b),
+    min = Math.min(r, g, b);
+  var h,
+    s,
+    l = (max + min) / 2;
+
+  if (max == min) {
+    h = s = 0; // achromatic
+  } else {
+    var d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+    h *= 60;
+    if (h < 0) {
+      h += 360;
+    }
+  }
+  return { hue: h, saturation: s, lightness: l };
+}
 /*
 function getVideoConstraints() {
   if (typeof window !== "undefined") {
@@ -157,7 +202,7 @@ export default function Home() {
   const handleDevices = React.useCallback(
     (mediaDevices) =>
       setDevices(mediaDevices.filter(({ kind }) => kind === "videoinput")),
-    [setDevices]
+    [setDevices],
   );
 
   React.useEffect(() => {
@@ -191,7 +236,7 @@ export default function Home() {
       },
       (err) => {
         errorCallback(err);
-      }
+      },
     );
   }
 
@@ -201,8 +246,8 @@ export default function Home() {
         type === "hex"
           ? "Hex code copied"
           : type === "rgb"
-          ? "RGB code copied"
-          : "CMYK code copied";
+            ? "RGB code copied"
+            : "HSL code copied";
       setNotification({ message, visible: true, success: true });
       setTimeout(() => {
         setNotification({ message: "", visible: false });
@@ -228,7 +273,7 @@ export default function Home() {
       copyToClipboard(rgbText, successCallback, errorCallback);
     } else if (type === "cmyk") {
       const cmykText = `cmyk(${color.cmyk.c.toFixed(2)}, ${color.cmyk.m.toFixed(
-        2
+        2,
       )}, ${color.cmyk.y.toFixed(2)}, ${color.cmyk.k.toFixed(2)})`;
       copyToClipboard(cmykText, successCallback, errorCallback);
     }
@@ -259,7 +304,7 @@ export default function Home() {
           height={720}
           ref={webcamRef}
           screenshotFormat="image/jpeg"
-          width={1280}
+          width={1080}
           videoConstraints={{ deviceId }}
         />
         <CaptureButton onClick={capture}>Capture</CaptureButton>
@@ -280,10 +325,16 @@ export default function Home() {
                     Copy
                   </CopyButton>
                 </p>
-                <p>
+                {/* <p>
                   {`CMYK(${color.cmyk.c.toFixed(2)}, ${color.cmyk.m.toFixed(
-                    2
+                    2,
                   )}, ${color.cmyk.y.toFixed(2)}, ${color.cmyk.k.toFixed(2)})`}
+                  <CopyButton onClick={() => handleCopyClick(color, "cmyk")}>
+                    Copy
+                  </CopyButton>
+                </p> */}
+                <p>
+                  {`HSL(${Math.round(color.hsl.hue)}, ${Math.round(color.hsl.saturation * 100)}%, ${Math.round(color.hsl.lightness * 100)}%)`}
                   <CopyButton onClick={() => handleCopyClick(color, "cmyk")}>
                     Copy
                   </CopyButton>
@@ -323,7 +374,7 @@ async function getColorsFromImage(imageSrc) {
   ];
 
   const colors = await Promise.all(
-    positions.map(async (pos) => getColorFromImageData(ctx, pos, sampleSize))
+    positions.map(async (pos) => getColorFromImageData(ctx, pos, sampleSize)),
   );
 
   return colors;
@@ -334,7 +385,7 @@ async function getColorFromImageData(ctx, position, sampleSize) {
     position.x,
     position.y,
     sampleSize,
-    sampleSize
+    sampleSize,
   ).data;
 
   let r = 0;
@@ -354,11 +405,13 @@ async function getColorFromImageData(ctx, position, sampleSize) {
 
   const hex = rgbToHex(r, g, b);
   const cmyk = rgbToCmyk(r, g, b);
+  const hsl = rgbToHsl(r, g, b);
 
   return {
     hex: hex,
     rgb: { r, g, b },
     cmyk: { c: cmyk.c, m: cmyk.m, y: cmyk.y, k: cmyk.k },
+    hsl: { hue: hsl.hue, saturation: hsl.saturation, lightness: hsl.lightness },
   };
 }
 
@@ -369,7 +422,7 @@ function copyToClipboard(text) {
     },
     (err) => {
       console.error("Could not copy text: ", err);
-    }
+    },
   );
 }
 
@@ -381,7 +434,7 @@ function handleCopyClick(color, type) {
     copyToClipboard(rgbText);
   } else if (type === "cmyk") {
     const cmykText = `cmyk(${color.cmyk.c.toFixed(2)}, ${color.cmyk.m.toFixed(
-      2
+      2,
     )}, ${color.cmyk.y.toFixed(2)}, ${color.cmyk.k.toFixed(2)})`;
     copyToClipboard(cmykText);
   }
