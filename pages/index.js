@@ -271,11 +271,9 @@ export default function Home() {
     } else if (type === "rgb") {
       const rgbText = `rgb(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`;
       copyToClipboard(rgbText, successCallback, errorCallback);
-    } else if (type === "cmyk") {
-      const cmykText = `cmyk(${color.cmyk.c.toFixed(2)}, ${color.cmyk.m.toFixed(
-        2,
-      )}, ${color.cmyk.y.toFixed(2)}, ${color.cmyk.k.toFixed(2)})`;
-      copyToClipboard(cmykText, successCallback, errorCallback);
+    } else if (type === "hsl") {
+      const hslText = `hsl(${Math.round(color.hsl.hue)}, ${Math.round(color.hsl.saturation * 100)}%, ${Math.round(color.hsl.lightness * 100)}%)`;
+      copyToClipboard(hslText, successCallback, errorCallback);
     }
   }
 
@@ -335,7 +333,7 @@ export default function Home() {
                 </p> */}
                 <p>
                   {`HSL(${Math.round(color.hsl.hue)}, ${Math.round(color.hsl.saturation * 100)}%, ${Math.round(color.hsl.lightness * 100)}%)`}
-                  <CopyButton onClick={() => handleCopyClick(color, "cmyk")}>
+                  <CopyButton onClick={() => handleCopyClick(color, "hsl")}>
                     Copy
                   </CopyButton>
                 </p>
@@ -432,11 +430,9 @@ function handleCopyClick(color, type) {
   } else if (type === "rgb") {
     const rgbText = `rgb(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`;
     copyToClipboard(rgbText);
-  } else if (type === "cmyk") {
-    const cmykText = `cmyk(${color.cmyk.c.toFixed(2)}, ${color.cmyk.m.toFixed(
-      2,
-    )}, ${color.cmyk.y.toFixed(2)}, ${color.cmyk.k.toFixed(2)})`;
-    copyToClipboard(cmykText);
+  } else if (type === "hsl") {
+    const hslText = `hsl( ${Math.round(color.hsl.hue)}, ${Math.round(color.hsl.saturation * 100)}%, ${Math.round(color.hsl.lightness * 100)}% )`;
+    copyToClipboard(hslText);
   }
 }
 
