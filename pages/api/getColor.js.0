@@ -1,0 +1,57 @@
+// pages/api/color.js
+
+import mongoose from 'mongoose';
+
+// 定义颜色模型
+const ColorSchema = new mongoose.Schema({
+  rgb: {
+    r: Number,
+    g: Number,
+    b: Number
+  },
+  hsl: {
+    hue: Number,
+    saturation: Number,
+    lightness: Number
+  }
+});
+
+// 创建 Color 模型
+const Color = mongoose.models.Color || mongoose.model('Color', ColorSchema);
+
+// 连接到 MongoDB 数据库
+const connectToDatabase = async () => {
+  if (mongoose.connections[0].readyState) {
+    return; // 如果已经连接到数据库，则不需要再次连接
+  }
+
+  await mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  });
+};
+
+export default async function handler(req, res) {
+  try {
+    // 确保数据库连接
+    await connectToDatabase();
+
+    // 获取颜色记录，假设你想获取第一条记录
+    const color = await Color.findOne();  
+
+    if (!color) {
+      return res.status(404).json({ message: 'Color not found' });
+    }
+
+    // 返回格式化后的数据
+    res.status(200).json({
+      red: color.rgb.r / 255,   // 将 RGB 值转换到 [0, 1] 范围
+      green: color.rgb.g / 255,
+      blue: color.rgb.b / 255,
+      lightness: color.hsl.lightness // 亮度已经是 [0, 1] 范围
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+}
