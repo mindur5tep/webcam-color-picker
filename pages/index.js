@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import Webcam from "react-webcam";
 import { Global, css } from "@emotion/react";
 import styled from "@emotion/styled";
+import { saveAs } from 'file-saver'
 
 const Container = styled.div`
   display: flex;
@@ -123,6 +124,29 @@ const GlobalStyle = css`
   }
 `;
 
+const WebcamContainer = styled.div`
+  position: relative;
+  width: 100%;
+  height: auto;
+  max-width: 1080px; /* Limit the max width of webcam */
+  margin: 0 auto;   /* Center the webcam container horizontally */
+  display: flex;
+  justify-content: center; /* Horizontally center the webcam */
+`;
+
+const Crosshair = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border: 2px solid red;  /* 2px红色边框 */
+  background-color: transparent;  /* 可选，确保中间是透明的 */
+  pointer-events: none;  /* 确保准星不会阻止用户交互 */
+  z-index: 10;
+`;
+
 function rgbToCmyk(r, g, b) {
   const c = 1 - r / 255;
   const m = 1 - g / 255;
@@ -191,6 +215,39 @@ function getVideoConstraints() {
 */
 export default function Home() {
   const webcamRef = useRef(null);
+  const [webcamWidth, setWebcamWidth] = useState(0);
+  const [webcamHeight, setWebcamHeight] = useState(0);
+  const [isClient, setIsClient] = useState(false);
+
+  // 只在客户端执行
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // 标记为客户端
+      setIsClient(true);
+    }
+  }, []);
+
+  // 更新 Webcam 大小，确保响应式
+  const updateWebcamSize = () => {
+    const width = window.innerWidth * 0.9; // 设置宽度为视口宽度的 90%
+    const height = width * 9 / 16; // 16:9 的高宽比
+    setWebcamWidth(width);
+    setWebcamHeight(height);
+  };
+
+  // 监听窗口大小变化
+  useEffect(() => {
+    if (isClient) {
+      updateWebcamSize(); // 初始化大小
+      window.addEventListener("resize", updateWebcamSize); // 监听窗口变化
+      return () => {
+        window.removeEventListener("resize", updateWebcamSize); // 清理监听器
+      };
+    }
+  }, [isClient]);
+
+
+
   const [hexColors, setHexColors] = useState([]);
   const [notification, setNotification] = useState({
     message: "",
@@ -227,6 +284,27 @@ export default function Home() {
     const imageSrc = webcamRef.current.getScreenshot();
     const colors = await getColorsFromImage(imageSrc);
     setHexColors(colors);
+  };
+
+  const captureAndSave = () => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    
+    // 创建一个 Blob 对象用于保存图像
+    const blob = dataURItoBlob(imageSrc);
+
+    // 使用 FileSaver.js 保存图像
+    saveAs(blob, "captured-image.jpg");
+  };
+
+  // 将 dataURI 转换为 Blob
+  const dataURItoBlob = (dataURI) => {
+    const byteString = atob(dataURI.split(',')[1]);
+    const arrayBuffer = new ArrayBuffer(byteString.length);
+    const uintArray = new Uint8Array(arrayBuffer);
+    for (let i = 0; i < byteString.length; i++) {
+      uintArray[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([uintArray], { type: 'image/jpeg' });
   };
 
   function copyToClipboard(text, successCallback, errorCallback) {
@@ -297,15 +375,19 @@ export default function Home() {
             </button>
           ))}
         </div>
-        <Webcam
-          audio={false}
-          height={720}
-          ref={webcamRef}
-          screenshotFormat="image/jpeg"
-          width={1080}
-          videoConstraints={{ deviceId }}
-        />
+        <WebcamContainer>
+          <Webcam
+            audio={false}
+            ref={webcamRef}
+            width={webcamWidth}
+            height={webcamHeight}
+            screenshotFormat="image/jpeg"
+            videoConstraints={{ deviceId }}
+          />
+          <Crosshair />
+        </WebcamContainer>
         <CaptureButton onClick={capture}>Capture</CaptureButton>
+        <CaptureButton onClick={captureAndSave}>Save</CaptureButton>
         {hexColors.length > 0 && (
           <ColorPreview>
             {hexColors.map((color, index) => (
@@ -375,6 +457,13 @@ async function getColorsFromImage(imageSrc) {
     positions.map(async (pos) => getColorFromImageData(ctx, pos, sampleSize)),
   );
 
+
+  // Get the center color
+  const centerColor = await getCenterColor(ctx, img);
+
+  // Insert the center color at the beginning of the array
+  colors.unshift(centerColor);
+
   return colors;
 }
 
@@ -412,6 +501,52 @@ async function getColorFromImageData(ctx, position, sampleSize) {
     hsl: { hue: hsl.hue, saturation: hsl.saturation, lightness: hsl.lightness },
   };
 }
+
+async function getCenterColor(ctx, img) {
+  const centerX = Math.floor(img.width / 2);
+  const centerY = Math.floor(img.height / 2);
+  const sampleSize = 10; // Same sample size as other positions
+
+  return await getColorFromImageData(ctx, { x: centerX, y: centerY }, sampleSize);
+}
+
+// async function getCentreColorFromImageData(ctx, position, sampleSize) {
+//   // 确定取样中心的位置：假设我们从采样区域的中心开始采样
+//   const startX = position.x - Math.floor(sampleSize / 2);
+//   const startY = position.y - Math.floor(sampleSize / 2);
+
+//   // 获取该区域的图像数据
+//   const imageData = ctx.getImageData(startX, startY, sampleSize, sampleSize).data;
+
+//   let r = 0;
+//   let g = 0;
+//   let b = 0;
+//   const totalPixels = Math.floor(imageData.length / 4);
+
+//   // 计算该区域所有像素的平均颜色
+//   for (let i = 0; i < imageData.length; i += 4) {
+//     r += imageData[i];     // 红色分量
+//     g += imageData[i + 1]; // 绿色分量
+//     b += imageData[i + 2]; // 蓝色分量
+//   }
+
+//   // 计算平均颜色
+//   r = Math.floor(r / totalPixels);
+//   g = Math.floor(g / totalPixels);
+//   b = Math.floor(b / totalPixels);
+
+//   // 转换为 HEX、CMYK、HSL
+//   const hex = rgbToHex(r, g, b);
+//   const cmyk = rgbToCmyk(r, g, b);
+//   const hsl = rgbToHsl(r, g, b);
+
+//   return {
+//     hex: hex,
+//     rgb: { r, g, b },
+//     cmyk: { c: cmyk.c, m: cmyk.m, y: cmyk.y, k: cmyk.k },
+//     hsl: { hue: hsl.hue, saturation: hsl.saturation, lightness: hsl.lightness },
+//   };
+// }
 
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text).then(
