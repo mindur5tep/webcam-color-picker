@@ -1,5 +1,11 @@
 // pages/api/colors.js
 import { connectToDatabase } from '../../lib/mongodb';  // 你需要配置 MongoDB
+import { VercelRequest, VercelResponse } from '@vercel/node';
+/**
+ * @param {import('@vercel/node').VercelRequest} req
+ * @param {import('@vercel/node').VercelResponse} res
+ */
+
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {

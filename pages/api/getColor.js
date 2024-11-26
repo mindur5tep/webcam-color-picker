@@ -1,4 +1,10 @@
 import { connectToDatabase } from '../../lib/mongodb';  // 连接 MongoDB 的库
+import { VercelRequest, VercelResponse } from '@vercel/node';
+/**
+ * @param {import('@vercel/node').VercelRequest} req
+ * @param {import('@vercel/node').VercelResponse} res
+ */
+
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
