@@ -21,7 +21,7 @@ export default async function handler(req, res) {
       const { rgb, hsl } = colorData[0];
 
       // 计算亮度值（lightness）
-      const lightness = hsl.l;  // 假设数据库已经存储了亮度值（[0, 1]）
+      const lightness = hsl.lightness;  // 假设数据库已经存储了亮度值（[0, 1]）
 
       // 构建返回的数据
       const result = {
