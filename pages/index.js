@@ -318,7 +318,7 @@ export default function Home() {
     `;
 
       copyToClipboard(colorString, successCallback, errorCallback);
-      await saveColorToBackend(color);
+      saveColorToBackend(color);
   }
 
   return (
@@ -356,25 +356,26 @@ export default function Home() {
         <CaptureButton onClick={captureAndSave}>Save</CaptureButton>
         {hexColors.length > 0 && (
           <ColorPreview>
-            {hexColors.map((color, index) => (
-              <ColorBox key={index}>
-                <ColorCircle color={color.hex} />
-                <p>
-                  {color.hex}
-                </p>
-                <p>
-                  {`RGB(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`}
-                </p>
-                <p>
-                  {`HSL(${Math.round(color.hsl.hue)}, ${Math.round(color.hsl.saturation * 100)}%, ${Math.round(color.hsl.lightness * 100)}%)`}
-                </p>
-                <p>
-                  <CopyButton onClick={() => handleCopyClick(color)}>
-                      Pick
-                  </CopyButton>
-              </ColorBox>
-            ))}
-          </ColorPreview>
+          {hexColors.map((color, index) => (
+            <ColorBox key={index}>
+              <ColorCircle color={color.hex} />
+              <p>
+                {color.hex}
+              </p>
+              <p>
+                {`RGB(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`}
+              </p>
+              <p>
+                {`HSL(${Math.round(color.hsl.hue)}, ${Math.round(color.hsl.saturation * 100)}%, ${Math.round(color.hsl.lightness * 100)}%)`}
+              </p>
+              <p>
+                <CopyButton onClick={() => handleCopyClick(color)}>
+                    Pick
+                </CopyButton>
+              </p>
+            </ColorBox>
+          ))}
+        </ColorPreview>
         )}
       </Container>
     </>
