@@ -25,9 +25,9 @@ export default async function handler(req, res) {
 
       // 构建返回的数据
       const result = {
-        red: rgb.r,
-        green: rgb.g,
-        blue: rgb.b,
+        red: rgb.r / 255,
+        green: rgb.g / 255,
+        blue: rgb.b /255 ,
         lightness: lightness
       };
 
