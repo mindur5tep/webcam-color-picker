@@ -1,0 +1,27 @@
+import connectMongo from '../../lib/mongodb';
+import Color from '../../models/Color';
+
+const saveColor = async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
+
+  try {
+    await connectMongo();
+
+    const { hex, rgb, hsl } = req.body;
+
+    const newColor = new Color({
+      hex,
+      rgb,
+      hsl,
+    });
+
+    await newColor.save();
+    return res.status(201).json({ message: 'Color saved successfully' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error saving color', error: error.message });
+  }
+};
+
+export default saveColor;
