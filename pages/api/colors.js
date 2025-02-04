@@ -3,7 +3,7 @@ import { connectToDatabase } from "../../lib/mongodb"; // 你需要配置 MongoD
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
-    const { hex, rgb, hsl } = req.body;
+    const { uuid, hex, rgb, hsl } = req.body;
 
     // 连接到数据库（假设使用 MongoDB）
     const { db } = await connectToDatabase();
@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     try {
       // 插入颜色数据到数据库
       const colorData = {
-        uuid: req.body.uuid,
+        uuid,
         hex,
         rgb,
         hsl,

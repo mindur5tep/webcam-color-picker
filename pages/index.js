@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import Webcam from "react-webcam";
 import { Global, css } from "@emotion/react";
 import styled from "@emotion/styled";
-import { saveAs } from 'file-saver'
+import { saveAs } from "file-saver";
 
 const Container = styled.div`
   display: flex;
@@ -129,7 +129,7 @@ const WebcamContainer = styled.div`
   width: 100%;
   height: auto;
   max-width: 2000px; /* Limit the max width of webcam */
-  margin: 0 auto;   /* Center the webcam container horizontally */
+  margin: 0 auto; /* Center the webcam container horizontally */
   display: flex;
   justify-content: center; /* Horizontally center the webcam */
 `;
@@ -141,9 +141,9 @@ const Crosshair = styled.div`
   transform: translate(-50%, -50%);
   width: 10px;
   height: 10px;
-  border: 2px solid red;  /* 2px红色边框 */
-  background-color: transparent;  /* 可选，确保中间是透明的 */
-  pointer-events: none;  /* 确保准星不会阻止用户交互 */
+  border: 2px solid red; /* 2px红色边框 */
+  background-color: transparent; /* 可选，确保中间是透明的 */
+  pointer-events: none; /* 确保准星不会阻止用户交互 */
   z-index: 10;
 `;
 
@@ -204,12 +204,19 @@ export default function Home() {
   const [webcamWidth, setWebcamWidth] = useState(0);
   const [webcamHeight, setWebcamHeight] = useState(0);
   const [isClient, setIsClient] = useState(false);
+  const [uuid, setUuid] = useState("");
 
   // 只在客户端执行
   useEffect(() => {
     if (typeof window !== "undefined") {
       // 标记为客户端
       setIsClient(true);
+      const queryParams = new URLSearchParams(window.location.search);
+      const uuidFromUrl = queryParams.get("uuid");
+      if (uuidFromUrl) {
+        setUuid(uuidFromUrl);
+        console.log("UUID from URL:", uuidFromUrl);
+      }
     }
   }, []);
 
@@ -231,8 +238,6 @@ export default function Home() {
       };
     }
   }, [isClient]);
-
-
 
   const [hexColors, setHexColors] = useState([]);
   const [notification, setNotification] = useState({
@@ -260,7 +265,7 @@ export default function Home() {
 
   const captureAndSave = () => {
     const imageSrc = webcamRef.current.getScreenshot();
-    
+
     // 创建一个 Blob 对象用于保存图像
     const blob = dataURItoBlob(imageSrc);
 
@@ -270,13 +275,13 @@ export default function Home() {
 
   // 将 dataURI 转换为 Blob
   const dataURItoBlob = (dataURI) => {
-    const byteString = atob(dataURI.split(',')[1]);
+    const byteString = atob(dataURI.split(",")[1]);
     const arrayBuffer = new ArrayBuffer(byteString.length);
     const uintArray = new Uint8Array(arrayBuffer);
     for (let i = 0; i < byteString.length; i++) {
       uintArray[i] = byteString.charCodeAt(i);
     }
-    return new Blob([uintArray], { type: 'image/jpeg' });
+    return new Blob([uintArray], { type: "image/jpeg" });
   };
 
   function copyToClipboard(text, successCallback, errorCallback) {
@@ -310,15 +315,15 @@ export default function Home() {
         setNotification({ message: "", visible: false });
       }, 2000);
     };
-      
+
     const colorString = `
       HEX: ${color.hex}
       RGB: rgb(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})
       HSL: hsl(${Math.round(color.hsl.hue)}, ${Math.round(color.hsl.saturation * 100)}%, ${Math.round(color.hsl.lightness * 100)}%)
     `;
 
-      copyToClipboard(colorString, successCallback, errorCallback);
-      saveColorToBackend(color);
+    copyToClipboard(colorString, successCallback, errorCallback);
+    saveColorToBackend(color, uuid);
   }
 
   return (
@@ -356,26 +361,22 @@ export default function Home() {
         <CaptureButton onClick={captureAndSave}>Save</CaptureButton>
         {hexColors.length > 0 && (
           <ColorPreview>
-          {hexColors.map((color, index) => (
-            <ColorBox key={index}>
-              <ColorCircle color={color.hex} />
-              <p>
-                {color.hex}
-              </p>
-              <p>
-                {`RGB(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`}
-              </p>
-              <p>
-                {`HSL(${Math.round(color.hsl.hue)}, ${Math.round(color.hsl.saturation * 100)}%, ${Math.round(color.hsl.lightness * 100)}%)`}
-              </p>
-              <p>
-                <CopyButton onClick={() => handleCopyClick(color)}>
+            {hexColors.map((color, index) => (
+              <ColorBox key={index}>
+                <ColorCircle color={color.hex} />
+                <p>{color.hex}</p>
+                <p>{`RGB(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`}</p>
+                <p>
+                  {`HSL(${Math.round(color.hsl.hue)}, ${Math.round(color.hsl.saturation * 100)}%, ${Math.round(color.hsl.lightness * 100)}%)`}
+                </p>
+                <p>
+                  <CopyButton onClick={() => handleCopyClick(color)}>
                     Pick
-                </CopyButton>
-              </p>
-            </ColorBox>
-          ))}
-        </ColorPreview>
+                  </CopyButton>
+                </p>
+              </ColorBox>
+            ))}
+          </ColorPreview>
         )}
       </Container>
     </>
@@ -410,7 +411,6 @@ async function getColorsFromImage(imageSrc) {
   const colors = await Promise.all(
     positions.map(async (pos) => getColorFromImageData(ctx, pos, sampleSize)),
   );
-
 
   // Get the center color
   const centerColor = await getCenterColor(ctx, img);
@@ -461,22 +461,26 @@ async function getCenterColor(ctx, img) {
   const centerY = Math.floor(img.height / 2);
   const sampleSize = 10; // Same sample size as other positions
 
-  return await getColorFromImageData(ctx, { x: centerX, y: centerY }, sampleSize);
+  return await getColorFromImageData(
+    ctx,
+    { x: centerX, y: centerY },
+    sampleSize,
+  );
 }
-
 
 function rgbToHex(r, g, b) {
   return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-async function saveColorToBackend(color) {
+async function saveColorToBackend(color, uuid) {
   try {
-    const response = await fetch('/api/colors', {
-      method: 'POST',
+    const response = await fetch("/api/colors", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        uuid,
         hex: color.hex,
         rgb: color.rgb,
         hsl: color.hsl,
@@ -484,11 +488,11 @@ async function saveColorToBackend(color) {
     });
 
     if (response.ok) {
-      console.log('Color saved to backend');
+      console.log("Color saved to backend");
     } else {
-      console.error('Failed to save color to backend');
+      console.error("Failed to save color to backend");
     }
   } catch (error) {
-    console.error('Error while saving color to backend:', error);
+    console.error("Error while saving color to backend:", error);
   }
 }
